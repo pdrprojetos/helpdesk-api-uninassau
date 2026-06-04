@@ -2,8 +2,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const swaggerUi = require('swagger-ui-express'); // Importa o Swagger UI
-const swaggerDocument = require('./swagger.json'); // Importa o nosso JSON do passo anterior
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 const ticketRoutes = require('./routes/ticketRoutes');
 
 const app = express();
@@ -12,8 +12,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ROTA DA DOCUMENTAÇÃO SWAGGER (Ficará visível para a banca)
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// CONFIGURAÇÃO ADICIONAL PARA FUNCIONAR NA VERCEL (SERVERLESS)
+// Força o Swagger a buscar os arquivos de interface de um CDN público
+const swaggerOptions = {
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+    customJs: [
+        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js'
+    ]
+};
+
+// ROTA DA DOCUMENTAÇÃO SWAGGER (Atualizada com as opções)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 
 // Rota base de teste
 app.get('/', (req, res) => {
