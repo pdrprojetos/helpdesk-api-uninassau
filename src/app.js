@@ -1,10 +1,10 @@
-// src/app.js
+// app.js (Salvo na raiz do projeto)
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
-const ticketRoutes = require('./routes/ticketRoutes');
+const swaggerDocument = require('./swagger.json'); // Mesma pasta (raiz)
+const ticketRoutes = require('./src/routes/ticketRoutes'); // Apontando para dentro de src
 
 const app = express();
 
@@ -12,8 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// CONFIGURAÇÃO ADICIONAL PARA FUNCIONAR NA VERCEL (SERVERLESS)
-// Força o Swagger a buscar os arquivos de interface de um CDN público
+// Configuração de Assets do Swagger via CDN para a Vercel
 const swaggerOptions = {
     customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
     customJs: [
@@ -22,7 +21,7 @@ const swaggerOptions = {
     ]
 };
 
-// ROTA DA DOCUMENTAÇÃO SWAGGER (Atualizada com as opções)
+// Rota da Documentação
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
 
 // Rota base de teste
@@ -40,8 +39,7 @@ app.use('/api', ticketRoutes);
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-        console.log(`Servidor rodando na porta ${PORT} 🚀`);
-        console.log(`Documentação da API disponível em: http://localhost:${PORT}/api-docs`);
+        console.log(`Servidor rodando localmente na porta ${PORT} 🚀`);
     });
 }
 
