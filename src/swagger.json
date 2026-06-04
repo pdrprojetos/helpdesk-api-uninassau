@@ -1,0 +1,90 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Helpdesk API - UNINASSAU",
+    "version": "1.0.0",
+    "description": "API RESTful para gerenciamento e controle de chamados de TI com transição de status rigorosa."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Servidor Local"
+    }
+  ],
+  "paths": {
+    "/tickets": {
+      "get": {
+        "summary": "Lista todos os chamados",
+        "description": "Retorna uma lista de todos os tickets ordenados pela data de criação.",
+        "responses": {
+          "200": {
+            "description": "Lista de chamados retornada com sucesso."
+          },
+          "500": {
+            "description": "Erro interno do servidor."
+          }
+        }
+      },
+      "post": {
+        "summary": "Abre um novo chamado de suporte",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["titulo", "descricao", "setor"],
+                "properties": {
+                  "titulo": { "type": "string", "example": "Queda de conexão no setor financeiro" },
+                  "descricao": { "type": "string", "example": "O switch principal do rack 2 desarmou e o setor está sem rede." },
+                  "setor": { "type": "string", "example": "Financeiro" },
+                  "prioridade": { "type": "string", "example": "Alta" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Chamado aberto com sucesso!" },
+          "400": { "description": "Campos obrigatórios ausentes." },
+          "500": { "description": "Erro interno do servidor." }
+        }
+      }
+    },
+    "/tickets/{id}/status": {
+      "put": {
+        "summary": "Atualiza o status de um chamado (Regra de Negócio)",
+        "description": "Atualiza o status seguindo o fluxo obrigatório: Aberto -> Em Análise -> Resolvido.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID numérico do chamado",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["novoStatus"],
+                "properties": {
+                  "novoStatus": { "type": "string", "example": "Em Análise" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status atualizado com sucesso!" },
+          "400": { "description": "Transição de status inválida ou status incorreto." },
+          "404": { "description": "Chamado não encontrado." },
+          "500": { "description": "Erro interno do servidor." }
+        }
+      }
+    }
+  }
+}
