@@ -7,6 +7,6 @@ const ticketController = require('../controllers/ticketController');
 router.post('/tickets', ticketController.createTicket); // Criar chamado
 router.get('/tickets', ticketController.getAllTickets);   // Listar chamados
 router.put('/tickets/:id/status', ticketController.updateTicketStatus); // Nova rota de transição
-uter.delete('/tickets/:id', ticketController.deleteTicket); // Deletar chamado
+router.delete('/tickets/:id', ticketController.deleteTicket); // Deletar chamado
 
 module.exports = router;
