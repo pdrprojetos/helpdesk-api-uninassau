@@ -7,8 +7,12 @@
   },
   "servers": [
     {
+      "url": "https://helpdesk-api-uninassau.vercel.app/api",
+      "description": "Servidor de Produção (Vercel)"
+    },
+    {
       "url": "http://localhost:3000/api",
-      "description": "Servidor Local"
+      "description": "Servidor Local (Ambiente de Desenvolvimento)"
     }
   ],
   "paths": {
