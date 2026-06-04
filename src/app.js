@@ -1,10 +1,10 @@
-// app.js (Salvo na raiz do projeto)
+// src/app.js (Dentro da pasta src)
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json'); // Mesma pasta (raiz)
-const ticketRoutes = require('./src/routes/ticketRoutes'); // Apontando para dentro de src
+const swaggerDocument = require('./swagger.json'); // Mesma pasta (src)
+const ticketRoutes = require('./routes/ticketRoutes'); // Mesma pasta (src/routes)
 
 const app = express();
 
