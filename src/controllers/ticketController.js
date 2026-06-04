@@ -1,13 +1,16 @@
 // src/controllers/ticketController.js
 const supabase = require('../config/supabaseClient');
+const TicketModel = require('../models/ticketModel'); // <-- IMPORTANDO O MODEL AQUI!
 
 // 1. Criar um novo Ticket (POST)
 exports.createTicket = async (req, res) => {
     try {
         const { titulo, descricao, setor, prioridade } = req.body;
 
-        // VALIDAÇÃO (Regra de negócio obrigatória da AV2)
-        if (!titulo || !descricao || !setor) {
+        // VALIDAÇÃO UTILIZANDO O MODEL (Padrão MVC puro exigido no edital)
+        const estruturaValida = TicketModel.validarEstrutura({ titulo, descricao, setor });
+        
+        if (!estruturaValida) {
             return res.status(400).json({ 
                 erro: "Campos obrigatórios ausentes. Título, descrição e setor devem ser preenchidos." 
             });
@@ -17,18 +20,16 @@ exports.createTicket = async (req, res) => {
         const { data, error } = await supabase
             .from('tickets')
             .insert([{ titulo, descricao, setor, prioridade }])
-            .select(); // O .select() faz retornar o ticket criado
+            .select();
 
         if (error) throw error;
 
-        // Resposta de sucesso (HTTP 201: Created)
         return res.status(201).json({
             mensagem: "Chamado aberto com sucesso! 🛠️",
             ticket: data[0]
         });
 
     } catch (error) {
-        // TRATAMENTO DE ERRO (Critério do professor)
         return res.status(500).json({ 
             erro: "Erro interno ao criar o chamado.", 
             detalhes: error.message 
@@ -115,6 +116,36 @@ exports.updateTicketStatus = async (req, res) => {
     } catch (error) {
         return res.status(500).json({ 
             erro: "Erro ao atualizar o status.", 
+            detalhes: error.message 
+        });
+    }
+};
+
+// 4. Deletar um Ticket por ID (DELETE)
+exports.deleteTicket = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { data, error } = await supabase
+            .from('tickets')
+            .delete()
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+
+        if (data.length === 0) {
+            return res.status(404).json({ erro: "Chamado não encontrado para exclusão." });
+        }
+
+        return res.status(200).json({
+            mensagem: "Chamado deletado com sucesso! ❌",
+            ticketDeletado: data[0]
+        });
+
+    } catch (error) {
+        return res.status(500).json({ 
+            erro: "Erro ao deletar o chamado.", 
             detalhes: error.message 
         });
     }
