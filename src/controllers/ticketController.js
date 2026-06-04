@@ -1,13 +1,13 @@
 // src/controllers/ticketController.js
 const supabase = require('../config/supabaseClient');
-const TicketModel = require('../models/ticketModel'); // <-- IMPORTANDO O MODEL AQUI!
+const TicketModel = require('../models/ticketModel');
 
 // 1. Criar um novo Ticket (POST)
 exports.createTicket = async (req, res) => {
     try {
         const { titulo, descricao, setor, prioridade } = req.body;
 
-        // VALIDAÇÃO UTILIZANDO O MODEL (Padrão MVC puro exigido no edital)
+        // Validação utilizando o Model (Padrão MVC)
         const estruturaValida = TicketModel.validarEstrutura({ titulo, descricao, setor });
         
         if (!estruturaValida) {
@@ -16,10 +16,9 @@ exports.createTicket = async (req, res) => {
             });
         }
 
-        // Inserindo no banco de dados Supabase
         const { data, error } = await supabase
             .from('tickets')
-            .insert([{ titulo, descricao, setor, prioridade }])
+            .insert([{ titulo, descricao, setor, prioridade, status: 'Aberto' }])
             .select();
 
         if (error) throw error;
@@ -43,64 +42,55 @@ exports.getAllTickets = async (req, res) => {
         const { data, error } = await supabase
             .from('tickets')
             .select('*')
-            .order('data_criacao', { ascending: false });
+            .order('id', { ascending: true });
 
         if (error) throw error;
 
         return res.status(200).json(data);
-
     } catch (error) {
         return res.status(500).json({ 
-            erro: "Erro ao buscar os chamados.", 
+            erro: "Erro ao buscar chamados.", 
             detalhes: error.message 
         });
     }
 };
 
-// 3. Atualizar Status do Ticket com Regra de Transição (PUT)
+// 3. Atualizar Status do Ticket (PUT) - Regra de Negócio Rigorosa
 exports.updateTicketStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { novoStatus } = req.body;
+        const { status: novoStatus } = req.body;
 
-        const statusPermitidos = ['Aberto', 'Em Análise', 'Resolvido'];
-
-        if (!statusPermitidos.includes(novoStatus)) {
-            return res.status(400).json({ erro: "Status inválido." });
-        }
-
-        // 1. Buscar o status atual do ticket no banco
-        const { data: ticket, error: fetchError } = await supabase
+        // Buscar o ticket atual no banco para validar a regra de transição
+        const { data: ticketAtual, error: fetchError } = await supabase
             .from('tickets')
-            .select('status')
+            .select('*')
             .eq('id', id)
             .single();
 
-        if (fetchError || !ticket) {
+        if (fetchError || !ticketAtual) {
             return res.status(404).json({ erro: "Chamado não encontrado." });
         }
 
-        const statusAtual = ticket.status;
+        const statusAtual = ticketAtual.status;
 
-        // 2. Aplicar a Regra de Negócio de transição rigorosa
-        if (statusAtual === 'Aberto' && novoStatus !== 'Em Análise') {
-            return res.status(400).json({ 
-                erro: `Transição inválida. Um chamado 'Aberto' só pode ir para 'Em Análise'. Status atual: ${statusAtual}` 
-            });
-        }
-
-        if (statusAtual === 'Em Análise' && novoStatus !== 'Resolvido') {
-            return res.status(400).json({ 
-                erro: `Transição inválida. Um chamado 'Em Análise' só pode ir para 'Resolvido'. Status atual: ${statusAtual}` 
-            });
-        }
-
+        // Impedir alterações se já estiver resolvido
         if (statusAtual === 'Resolvido') {
-            return res.status(400).json({ erro: "Este chamado já foi Resolvido e não pode mais ser alterado." });
+            return res.status(400).json({ erro: "Chamados resolvidos não podem ser alterados." });
         }
 
-        // 3. Se passou pelas validações, atualiza no banco
-        const { data, error: updateError } = await supabase
+        // Validação do fluxo: Aberto -> Em Análise
+        if (statusAtual === 'Aberto' && novoStatus !== 'Em Análise') {
+            return res.status(400).json({ erro: "Um chamado em 'Aberto' só pode avançar para 'Em Análise'." });
+        }
+
+        // Validação do fluxo: Em Análise -> Resolvido
+        if (statusAtual === 'Em Análise' && novoStatus !== 'Resolvido') {
+            return res.status(400).json({ erro: "Um chamado 'Em Análise' só pode avançar para 'Resolvido'." });
+        }
+
+        // Atualizar no banco caso passe nas validações
+        const { data: ticketAtualizado, error: updateError } = await supabase
             .from('tickets')
             .update({ status: novoStatus })
             .eq('id', id)
@@ -109,13 +99,13 @@ exports.updateTicketStatus = async (req, res) => {
         if (updateError) throw updateError;
 
         return res.status(200).json({
-            mensagem: "Status atualizado com sucesso! 🔄",
-            ticket: data[0]
+            mensagem: "Status atualizado com sucesso! 🎉",
+            ticket: ticketAtualizado[0]
         });
 
     } catch (error) {
         return res.status(500).json({ 
-            erro: "Erro ao atualizar o status.", 
+            erro: "Erro ao atualizar o status do chamado.", 
             detalhes: error.message 
         });
     }
@@ -134,7 +124,7 @@ exports.deleteTicket = async (req, res) => {
 
         if (error) throw error;
 
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             return res.status(404).json({ erro: "Chamado não encontrado para exclusão." });
         }
 
